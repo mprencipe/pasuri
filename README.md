@@ -14,7 +14,7 @@ Example response when queried with **hash?prefix=9D4E1**:
 ]
 ```
 
-Pasuri is written in Go and uses SQLite. The motivation for choosing SQLite is it's small size and the simplicity of the data structures.
+Pasuri is written in Go and uses SQLite. The motivation for choosing SQLite is it's small size and the simplicity of the data structures. SQLite is good at optimizing integer storage so hashes are persisted as integers instead of hex strings.
 
 ## Usage
 ### Check out and install dependencies

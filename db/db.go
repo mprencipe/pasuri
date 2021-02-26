@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"os"
+	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
@@ -28,18 +29,26 @@ func InitDb(dbName string) {
 
 func FindHashSuffixes(hashPrefix string) ([]string, error) {
 	hashSuffixes := make([]string, 0)
-
-	rows, err := db.Query("SELECT suffix FROM hash WHERE prefix = ?", hashPrefix)
+	hashPrefixInt, err := strconv.ParseInt(hashPrefix, 16, 64)
 	if err != nil {
 		return hashSuffixes, err
 	}
 
-	var hashSuffix string
+	rows, err := db.Query("SELECT prefix, part1, part2, part3 FROM hash WHERE prefix = ?", hashPrefixInt)
+	if err != nil {
+		return hashSuffixes, err
+	}
+
+	var dbHashPrefix int
+	var dbHashPart1 int64
+	var dbHashPart2 int64
+	var dbHashPart3 int64
 	for rows.Next() {
-		err = rows.Scan(&hashSuffix)
+		err = rows.Scan(&dbHashPrefix, &dbHashPart1, &dbHashPart2, &dbHashPart3)
 		if err != nil {
 			return hashSuffixes, err
 		}
+		hashSuffix := strconv.FormatInt(dbHashPart1, 16) + strconv.FormatInt(dbHashPart2, 16) + strconv.FormatInt(dbHashPart3, 16)
 		hashSuffixes = append(hashSuffixes, hashSuffix)
 	}
 	rows.Close()

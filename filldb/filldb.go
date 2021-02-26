@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"io"
 	"os"
+	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
@@ -46,21 +47,31 @@ func saveHashes(fileName string, db *sql.DB) {
 	log.Info("Starting to hash", fileName)
 	for scanner.Scan() {
 		if i%100 == 0 {
-			log.Debug("Read", i, "lines")
+			log.Info("Read ", i, " lines")
 		}
 
 		hasher := sha1.New()
 		io.WriteString(hasher, scanner.Text())
 		hash := hex.EncodeToString(hasher.Sum(nil))
-		hashPrefix := hash[:5]
-		hashSuffix := hash[5:]
-		_, err = db.Exec("INSERT OR IGNORE INTO hash(prefix, suffix) VALUES(?, ?)", hashPrefix, hashSuffix)
-		if err != nil {
-			log.Fatal("Unable to insert hash", err)
-			os.Exit(1)
-		}
+		hashPrefix, err := strconv.ParseInt(hash[:5], 16, 64)
+		exitOnError(err)
+		hashPart1, err := strconv.ParseInt(hash[5:17], 16, 64)
+		exitOnError(err)
+		hashPart2, err := strconv.ParseInt(hash[17:29], 16, 64)
+		exitOnError(err)
+		hashPart3, err := strconv.ParseInt(hash[29:], 16, 64)
+		exitOnError(err)
+		_, err = db.Exec("INSERT OR IGNORE INTO hash(prefix, part1, part2, part3) VALUES(?,?,?,?)", hashPrefix, hashPart1, hashPart2, hashPart3)
+		exitOnError(err)
 
 		i++
 	}
 	log.Info(fileName, "..done!")
+}
+
+func exitOnError(err error) {
+	if err != nil {
+		log.Fatal("Unable to insert hash", err)
+		os.Exit(1)
+	}
 }

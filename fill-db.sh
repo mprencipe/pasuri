@@ -17,7 +17,7 @@ rm -f pass.db
 touch pass.db
 
 # Create table
-sqlite3 pass.db 'create table hash (prefix text not null, suffix text not null, primary key(prefix, suffix))'
+sqlite3 pass.db 'create table hash (prefix integer not null, part1 integer not null, part2 integer not null, part3 integer not null, primary key(prefix, part1, part2, part3)) without rowid'
 
 # Move database to directory, Go sql library doesn't like relative paths
 mv pass.db filldb

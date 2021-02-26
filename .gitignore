@@ -20,5 +20,5 @@
 # Executable
 pasuri
 
-# Database file
-**/pass.db
+# Database files
+**/*.db
