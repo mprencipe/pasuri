@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"pasuri/db"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -15,6 +16,12 @@ func getHashSuffixes(w http.ResponseWriter, req *http.Request) {
 	if len(hashPrefix) != 5 {
 		http.Error(w, "Hash prefix needs to be exactly 5 characters in length", http.StatusBadRequest)
 		log.Error(errors.New("Received invalid hash prefix " + hashPrefix))
+		return
+	}
+	_, err := strconv.ParseUint(hashPrefix, 16, 64)
+	if err != nil {
+		http.Error(w, "Hash prefix needs to be in hexadecimal format: 0-9, a-f", http.StatusBadRequest)
+		log.Error(errors.New("Received non-hex string " + hashPrefix))
 		return
 	}
 	hashSuffixes, err := db.FindHashSuffixes(hashPrefix)
