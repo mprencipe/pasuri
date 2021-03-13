@@ -8,6 +8,6 @@ WORKDIR /app
 
 RUN go build
 
-CMD ["/app/pasuri"]
+ENTRYPOINT ["/app/pasuri"]
 
 EXPOSE 8080/tcp

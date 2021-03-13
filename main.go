@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"pasuri/db"
 	"strconv"
 
@@ -35,6 +36,11 @@ func getHashSuffixes(w http.ResponseWriter, req *http.Request) {
 		log.Error(err)
 		return
 	}
+
+	if cors, ok := os.LookupEnv("CORS"); ok {
+		w.Header().Set("Access-Control-Allow-Origin", cors)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, "%s", string(hashSuffixesJson))
 }

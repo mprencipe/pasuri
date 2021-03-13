@@ -16,27 +16,33 @@ Example response when queried with **hash?prefix=9D4E1**:
 
 Pasuri is written in Go and uses SQLite. The motivation for choosing SQLite is it's small size and the simplicity of the data structures. SQLite is good at optimizing integer storage so hashes are persisted as integers instead of hex strings.
 
-## Usage
-### Check out and install dependencies
+## Check out and install dependencies
 ```
 git clone https://github.com/mprencipe/pasuri.git
 go get
 ```
 
-### Generate a database (pass.db) from some plaintext password files.
+## Run tests
 ```
-./fill-db.sh rockyou.txt xato-net-10-million-passwords-1000000.txt
+./test.sh
 ```
 
-### Run with Docker
+## Generate a database (pass.db) from plaintext (-t) or hash files (-h).
 ```
+./fill-db.sh -t passwords.txt -h hashes.txt
+```
+
+## Run with Docker
+The Access-Control-Allow-Origin header can be controlled with the optional environmental variable CORS.
+```
+go build
 docker build -t mprencipe/pasuri:0.1 .
-
-docker run --rm -p 8080:8080 --name pasuri mprencipe/pasuri:0.1
+docker run --rm -p 8080:8080 -e CORS=* --name pasuri mprencipe/pasuri:0.1
 ```
 
-### Run with Docker
+## Run without Docker
 ```
+# export CORS=*
 go build
 ./pasuri
 ```

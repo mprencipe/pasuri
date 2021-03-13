@@ -16,14 +16,12 @@ func InitDb(dbName string) {
 	log.Debug("Checking if database file exists " + dbName)
 	if os.IsNotExist(fileErr) {
 		log.Fatal("Database file does not exist " + dbName)
-		os.Exit(1)
 	}
 
 	var err error
 	db, err = sql.Open("sqlite3", dbName)
 	if err != nil {
 		log.Fatal("Couldn't open database")
-		os.Exit(1)
 	}
 }
 
@@ -33,7 +31,6 @@ func FindHashSuffixes(hashPrefix string) ([]string, error) {
 	if err != nil {
 		return hashSuffixes, err
 	}
-
 	rows, err := db.Query("SELECT prefix, part1, part2, part3 FROM hash WHERE prefix = ?", hashPrefixInt)
 	if err != nil {
 		return hashSuffixes, err
