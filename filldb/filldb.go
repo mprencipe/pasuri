@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -13,6 +14,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
 )
+
+const chunkSize = 7000
 
 func main() {
 	log.Info("Starting up..")
@@ -27,13 +30,13 @@ func main() {
 	}
 
 	for _, fileName := range os.Args[1:] {
-		saveHashes(fileName, db)
+		processFile(fileName, db)
 	}
 
 	log.Info("..done!")
 }
 
-func saveHashes(fileNameAndType string, db *sql.DB) {
+func processFile(fileNameAndType string, db *sql.DB) {
 	parts := strings.Split(fileNameAndType, ":")
 	fileName := parts[0]
 	fileType := parts[1]
@@ -46,44 +49,61 @@ func saveHashes(fileNameAndType string, db *sql.DB) {
 
 	scanner := bufio.NewScanner(file)
 
-	i := 0
 	log.Info("Starting to write file ", fileName)
-	for scanner.Scan() {
-		if i%100 == 0 {
-			log.Info("Read ", i, " lines")
-		}
 
+	rowCount := 0
+	chunks := []string{}
+	for scanner.Scan() {
+		rowCount++
 		var hash string
 		if fileType == "hash" {
 			hash = scanner.Text()
 		} else {
 			hash = MakeHash(scanner.Text())
 		}
-
-		writeHash(hash, db)
-
-		i++
+		chunks = append(chunks, hash)
+		if len(chunks) == chunkSize {
+			log.Info("Read ", rowCount, " lines")
+			saveHashes(chunks, db)
+			chunks = nil
+		}
+	}
+	if len(chunks) > 0 {
+		saveHashes(chunks, db)
 	}
 	log.Info("..done writing ", fileName)
+}
+
+func saveHashes(hashes []string, db *sql.DB) {
+	valueStrings := []string{}
+	valueArgs := []interface{}{}
+
+	for _, hash := range hashes {
+		valueStrings = append(valueStrings, "(?, ?, ?, ?)")
+		hashPrefix, err := strconv.ParseInt(hash[:5], 16, 64)
+		exitOnError(err)
+		hashPart1, err := strconv.ParseInt(hash[5:17], 16, 64)
+		exitOnError(err)
+		hashPart2, err := strconv.ParseInt(hash[17:29], 16, 64)
+		exitOnError(err)
+		hashPart3, err := strconv.ParseInt(hash[29:], 16, 64)
+		exitOnError(err)
+		valueArgs = append(valueArgs, hashPrefix)
+		valueArgs = append(valueArgs, hashPart1)
+		valueArgs = append(valueArgs, hashPart2)
+		valueArgs = append(valueArgs, hashPart3)
+	}
+
+	smt := `INSERT OR IGNORE INTO hash(prefix, part1, part2, part3) VALUES %s`
+	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
+	_, err := db.Exec(smt, valueArgs...)
+	exitOnError(err)
 }
 
 func MakeHash(str string) string {
 	hasher := sha1.New()
 	io.WriteString(hasher, str)
 	return hex.EncodeToString(hasher.Sum(nil))
-}
-
-func writeHash(hash string, db *sql.DB) {
-	hashPrefix, err := strconv.ParseInt(hash[:5], 16, 64)
-	exitOnError(err)
-	hashPart1, err := strconv.ParseInt(hash[5:17], 16, 64)
-	exitOnError(err)
-	hashPart2, err := strconv.ParseInt(hash[17:29], 16, 64)
-	exitOnError(err)
-	hashPart3, err := strconv.ParseInt(hash[29:], 16, 64)
-	exitOnError(err)
-	_, err = db.Exec("INSERT OR IGNORE INTO hash(prefix, part1, part2, part3) VALUES(?,?,?,?)", hashPrefix, hashPart1, hashPart2, hashPart3)
-	exitOnError(err)
 }
 
 func exitOnError(err error) {
