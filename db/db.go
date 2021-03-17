@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"strconv"
 
@@ -45,10 +46,14 @@ func FindHashSuffixes(hashPrefix string) ([]string, error) {
 		if err != nil {
 			return hashSuffixes, err
 		}
-		hashSuffix := strconv.FormatInt(dbHashPart1, 16) + strconv.FormatInt(dbHashPart2, 16) + strconv.FormatInt(dbHashPart3, 16)
+		hashSuffix := leftPadWithZeroes(strconv.FormatInt(dbHashPart1, 16), 12) + leftPadWithZeroes(strconv.FormatInt(dbHashPart2, 16), 12) + leftPadWithZeroes(strconv.FormatInt(dbHashPart3, 16), 11)
 		hashSuffixes = append(hashSuffixes, hashSuffix)
 	}
 	rows.Close()
 
 	return hashSuffixes, nil
+}
+
+func leftPadWithZeroes(hashPart string, length int) string {
+	return fmt.Sprintf("%0*s", length, hashPart)
 }
