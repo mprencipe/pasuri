@@ -1,0 +1,10 @@
+filldb/
+test.sh
+*.txt
+db/db_test.go
+db/test.db
+*.md
+LICENSE
+.gitignore
+fill-db.sh
+Dockerfile
